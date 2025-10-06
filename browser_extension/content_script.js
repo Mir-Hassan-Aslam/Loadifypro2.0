@@ -225,39 +225,57 @@ function addDownloadButton() {
         playerContainer = document.querySelector('#shorts-player') || 
                          document.querySelector('[is="ytd-shorts-player"]') ||
                          document.querySelector('ytd-shorts-player') ||
-                         document.querySelector('video')?.closest('ytd-shorts-player');
+                         document.querySelector('ytd-reel-player') ||
+                         document.querySelector('video')?.closest('ytd-shorts-player') ||
+                         document.querySelector('video')?.closest('ytd-reel-player');
     } else {
-        // For regular YouTube videos
+        // For regular YouTube videos - try multiple selectors
         playerContainer = document.querySelector('#movie_player') || 
                          document.querySelector('.html5-video-player') ||
-                         document.querySelector('video')?.closest('div');
+                         document.querySelector('ytd-player') ||
+                         document.querySelector('#player') ||
+                         document.querySelector('video')?.closest('div') ||
+                         document.querySelector('video')?.parentElement;
     }
     
     if (!playerContainer) {
-        console.log('LoadifyPro: Video player container not found');
+        console.log('LoadifyPro: Video player container not found for URL:', window.location.href);
         return;
     }
+    
+    console.log('LoadifyPro: Found player container:', playerContainer);
 
     const button = document.createElement('button');
     button.className = 'loadifypro-download-btn';
     button.innerHTML = '📥 Download with LoadifyPro';
+    
+    // Different positioning for Shorts vs regular videos
+    const isShorts = window.location.pathname.includes('/shorts');
+    const topPosition = isShorts ? '20px' : '10px';
+    const rightPosition = isShorts ? '20px' : '10px';
+    
     button.style.cssText = `
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        z-index: 9999;
-        padding: 8px 12px;
-        background-color: rgba(255, 0, 0, 0.3);
-        color: white;
-        border: none;
-        border-radius: 5px;
-        cursor: pointer;
-        font-size: 12px;
-        font-weight: bold;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        transition: all 0.3s ease;
-        opacity: 0.3;
-        backdrop-filter: blur(5px);
+        position: absolute !important;
+        top: ${topPosition} !important;
+        right: ${rightPosition} !important;
+        z-index: 9999 !important;
+        padding: 6px 10px !important;
+        background-color: rgba(255, 0, 0, 0.2) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 5px !important;
+        cursor: pointer !important;
+        font-size: 11px !important;
+        font-weight: bold !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+        transition: all 0.3s ease !important;
+        opacity: 0.2 !important;
+        backdrop-filter: blur(8px) !important;
+        display: block !important;
+        pointer-events: auto !important;
+        max-width: 120px !important;
+        text-align: center !important;
+        line-height: 1.2 !important;
     `;
     
     // Make sure the container can hold a positioned element
@@ -267,15 +285,17 @@ function addDownloadButton() {
 
     // Hover effects
     button.addEventListener('mouseenter', () => {
-        button.style.opacity = '1';
-        button.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
-        button.style.transform = 'scale(1.05)';
+        button.style.opacity = '1 !important';
+        button.style.backgroundColor = 'rgba(255, 0, 0, 0.9) !important';
+        button.style.transform = 'scale(1.05) !important';
+        button.style.boxShadow = '0 4px 12px rgba(255, 0, 0, 0.5) !important';
     });
 
     button.addEventListener('mouseleave', () => {
-        button.style.opacity = '0.3';
-        button.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
-        button.style.transform = 'scale(1)';
+        button.style.opacity = '0.2 !important';
+        button.style.backgroundColor = 'rgba(255, 0, 0, 0.2) !important';
+        button.style.transform = 'scale(1) !important';
+        button.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4) !important';
     });
 
     button.onclick = (e) => {
@@ -388,10 +408,104 @@ function checkAndAddButton() {
     if (window.location.hostname.includes('youtube.com') && 
         (window.location.pathname.includes('/watch') || window.location.pathname.includes('/shorts'))) {
         addDownloadButton();
+        
+        // Fallback: if no button was added, try again with more aggressive detection
+        setTimeout(() => {
+            if (!document.querySelector('.loadifypro-download-btn')) {
+                console.log('LoadifyPro: Retrying button addition with fallback method');
+                addDownloadButtonFallback();
+            }
+        }, 2000);
     }
     
     // Always check for file download links on any page
     addDownloadButtonsToLinks();
+}
+
+// Fallback method for adding download button
+function addDownloadButtonFallback() {
+    // Check if button already exists
+    if (document.querySelector('.loadifypro-download-btn')) {
+        return;
+    }
+
+    // Try to find any video element and its container
+    const video = document.querySelector('video');
+    if (!video) {
+        console.log('LoadifyPro: No video element found for fallback');
+        return;
+    }
+
+    let playerContainer = video.closest('div');
+    
+    // If no suitable container, create one
+    if (!playerContainer || playerContainer === document.body) {
+        playerContainer = video.parentElement;
+        if (playerContainer) {
+            playerContainer.style.position = 'relative';
+        }
+    }
+    
+    if (!playerContainer) {
+        console.log('LoadifyPro: Could not find suitable container for fallback');
+        return;
+    }
+
+    const button = document.createElement('button');
+    button.className = 'loadifypro-download-btn';
+    button.innerHTML = '📥 LoadifyPro';
+    
+    const isShorts = window.location.pathname.includes('/shorts');
+    const topPosition = isShorts ? '20px' : '10px';
+    const rightPosition = isShorts ? '20px' : '10px';
+    
+    button.style.cssText = `
+        position: absolute !important;
+        top: ${topPosition} !important;
+        right: ${rightPosition} !important;
+        z-index: 9999 !important;
+        padding: 6px 10px !important;
+        background-color: rgba(255, 0, 0, 0.2) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 5px !important;
+        cursor: pointer !important;
+        font-size: 11px !important;
+        font-weight: bold !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+        transition: all 0.3s ease !important;
+        opacity: 0.2 !important;
+        backdrop-filter: blur(8px) !important;
+        display: block !important;
+        pointer-events: auto !important;
+        max-width: 120px !important;
+        text-align: center !important;
+        line-height: 1.2 !important;
+    `;
+    
+    // Hover effects
+    button.addEventListener('mouseenter', () => {
+        button.style.opacity = '1 !important';
+        button.style.backgroundColor = 'rgba(255, 0, 0, 0.9) !important';
+        button.style.transform = 'scale(1.05) !important';
+        button.style.boxShadow = '0 4px 12px rgba(255, 0, 0, 0.5) !important';
+    });
+
+    button.addEventListener('mouseleave', () => {
+        button.style.opacity = '0.2 !important';
+        button.style.backgroundColor = 'rgba(255, 0, 0, 0.2) !important';
+        button.style.transform = 'scale(1) !important';
+        button.style.boxShadow = '0 2px 8px rgba(0,0,0,0.4) !important';
+    });
+
+    button.onclick = (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        createQualityPopup();
+    };
+
+    playerContainer.appendChild(button);
+    console.log('LoadifyPro: Download button added via fallback method');
 }
 
 // Function to handle fullscreen and picture-in-picture changes
