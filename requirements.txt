@@ -1,0 +1,5 @@
+requests
+yt-dlp
+customtkinter
+Pillow
+tkinterdnd2-universal
