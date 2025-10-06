@@ -1,0 +1,23 @@
+{
+    "manifest_version": 3,
+    "name": "LoadifyPro Integration",
+    "version": "1.0",
+    "description": "Sends download links from your browser to the LoadifyPro application.",
+    "permissions": [
+        "nativeMessaging",
+        "activeTab",
+        "scripting"
+    ],
+    "background": {
+        "service_worker": "background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "js": ["content_script.js"]
+        }
+    ],
+    "icons": {
+        "48": "icon48.png" 
+    }
+}

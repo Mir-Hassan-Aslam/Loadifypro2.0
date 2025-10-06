@@ -217,10 +217,21 @@ function addDownloadButton() {
         return;
     }
 
-    // Find the YouTube video player container
-    const playerContainer = document.querySelector('#movie_player') || 
-                           document.querySelector('.html5-video-player') ||
-                           document.querySelector('video')?.closest('div');
+    let playerContainer;
+    
+    // Check if we're on YouTube Shorts
+    if (window.location.pathname.includes('/shorts')) {
+        // For YouTube Shorts, look for the shorts player
+        playerContainer = document.querySelector('#shorts-player') || 
+                         document.querySelector('[is="ytd-shorts-player"]') ||
+                         document.querySelector('ytd-shorts-player') ||
+                         document.querySelector('video')?.closest('ytd-shorts-player');
+    } else {
+        // For regular YouTube videos
+        playerContainer = document.querySelector('#movie_player') || 
+                         document.querySelector('.html5-video-player') ||
+                         document.querySelector('video')?.closest('div');
+    }
     
     if (!playerContainer) {
         console.log('LoadifyPro: Video player container not found');
@@ -229,25 +240,43 @@ function addDownloadButton() {
 
     const button = document.createElement('button');
     button.className = 'loadifypro-download-btn';
-    button.innerText = '📥 Download with LoadifyPro';
-    button.style.position = 'absolute';
-    button.style.top = '10px';
-    button.style.right = '10px';
-    button.style.zIndex = '9999';
-    button.style.padding = '8px 12px';
-    button.style.backgroundColor = '#ff0000';
-    button.style.color = 'white';
-    button.style.border = 'none';
-    button.style.borderRadius = '5px';
-    button.style.cursor = 'pointer';
-    button.style.fontSize = '12px';
-    button.style.fontWeight = 'bold';
-    button.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+    button.innerHTML = '📥 Download with LoadifyPro';
+    button.style.cssText = `
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 9999;
+        padding: 8px 12px;
+        background-color: rgba(255, 0, 0, 0.3);
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 12px;
+        font-weight: bold;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        transition: all 0.3s ease;
+        opacity: 0.3;
+        backdrop-filter: blur(5px);
+    `;
     
     // Make sure the container can hold a positioned element
     if (getComputedStyle(playerContainer).position === 'static') {
         playerContainer.style.position = 'relative';
     }
+
+    // Hover effects
+    button.addEventListener('mouseenter', () => {
+        button.style.opacity = '1';
+        button.style.backgroundColor = 'rgba(255, 0, 0, 0.9)';
+        button.style.transform = 'scale(1.05)';
+    });
+
+    button.addEventListener('mouseleave', () => {
+        button.style.opacity = '0.3';
+        button.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+        button.style.transform = 'scale(1)';
+    });
 
     button.onclick = (e) => {
         e.stopPropagation();
@@ -355,15 +384,45 @@ function downloadFile(fileUrl) {
 
 // Function to check for video and add button
 function checkAndAddButton() {
-    // Check if we're on a video page
+    // Check if we're on a video page (regular videos or Shorts)
     if (window.location.hostname.includes('youtube.com') && 
-        window.location.pathname.includes('/watch')) {
+        (window.location.pathname.includes('/watch') || window.location.pathname.includes('/shorts'))) {
         addDownloadButton();
     }
     
     // Always check for file download links on any page
     addDownloadButtonsToLinks();
 }
+
+// Function to handle fullscreen and picture-in-picture changes
+function handleVideoModeChanges() {
+    const button = document.querySelector('.loadifypro-download-btn');
+    if (!button) return;
+
+    // Check if video is in fullscreen mode
+    const isFullscreen = document.fullscreenElement || 
+                        document.webkitFullscreenElement || 
+                        document.mozFullScreenElement || 
+                        document.msFullscreenElement;
+
+    // Check if video is in picture-in-picture mode
+    const isPictureInPicture = document.pictureInPictureElement;
+
+    // Hide button in fullscreen or picture-in-picture mode
+    if (isFullscreen || isPictureInPicture) {
+        button.style.display = 'none';
+    } else {
+        button.style.display = 'block';
+    }
+}
+
+// Add event listeners for fullscreen and picture-in-picture changes
+document.addEventListener('fullscreenchange', handleVideoModeChanges);
+document.addEventListener('webkitfullscreenchange', handleVideoModeChanges);
+document.addEventListener('mozfullscreenchange', handleVideoModeChanges);
+document.addEventListener('MSFullscreenChange', handleVideoModeChanges);
+document.addEventListener('enterpictureinpicture', handleVideoModeChanges);
+document.addEventListener('leavepictureinpicture', handleVideoModeChanges);
 
 // Global download interceptor
 function setupGlobalDownloadInterceptor() {
@@ -455,6 +514,9 @@ function initializeExtension() {
 
     // Also check periodically for dynamic content
     setInterval(checkAndAddButton, 2000);
+    
+    // Check for video mode changes periodically
+    setInterval(handleVideoModeChanges, 1000);
 
     // Listen for YouTube navigation (SPA)
     let lastUrl = location.href;
