@@ -221,13 +221,21 @@ function addDownloadButton() {
     
     // Check if we're on YouTube Shorts
     if (window.location.pathname.includes('/shorts')) {
-        // For YouTube Shorts, look for the shorts player
+        console.log('LoadifyPro: Detected YouTube Shorts, looking for player...');
+        // For YouTube Shorts, look for the shorts player with more selectors
         playerContainer = document.querySelector('#shorts-player') || 
                          document.querySelector('[is="ytd-shorts-player"]') ||
                          document.querySelector('ytd-shorts-player') ||
                          document.querySelector('ytd-reel-player') ||
+                         document.querySelector('ytd-reel-video-player') ||
+                         document.querySelector('[is="ytd-reel-video-player"]') ||
                          document.querySelector('video')?.closest('ytd-shorts-player') ||
-                         document.querySelector('video')?.closest('ytd-reel-player');
+                         document.querySelector('video')?.closest('ytd-reel-player') ||
+                         document.querySelector('video')?.closest('ytd-reel-video-player') ||
+                         document.querySelector('video')?.closest('[is="ytd-shorts-player"]') ||
+                         document.querySelector('video')?.closest('[is="ytd-reel-video-player"]');
+        
+        console.log('LoadifyPro: Shorts player container found:', playerContainer);
     } else {
         // For regular YouTube videos - try multiple selectors
         playerContainer = document.querySelector('#movie_player') || 
@@ -416,6 +424,16 @@ function checkAndAddButton() {
                 addDownloadButtonFallback();
             }
         }, 2000);
+        
+        // Additional fallback for Shorts after 5 seconds
+        if (window.location.pathname.includes('/shorts')) {
+            setTimeout(() => {
+                if (!document.querySelector('.loadifypro-download-btn')) {
+                    console.log('LoadifyPro: Final attempt for Shorts');
+                    addDownloadButtonFallback();
+                }
+            }, 5000);
+        }
     }
     
     // Always check for file download links on any page
@@ -429,6 +447,8 @@ function addDownloadButtonFallback() {
         return;
     }
 
+    console.log('LoadifyPro: Running fallback method for URL:', window.location.href);
+    
     // Try to find any video element and its container
     const video = document.querySelector('video');
     if (!video) {
@@ -436,7 +456,19 @@ function addDownloadButtonFallback() {
         return;
     }
 
+    console.log('LoadifyPro: Found video element:', video);
+    
     let playerContainer = video.closest('div');
+    
+    // For Shorts, try more specific containers
+    if (window.location.pathname.includes('/shorts')) {
+        playerContainer = video.closest('ytd-shorts-player') ||
+                        video.closest('ytd-reel-player') ||
+                        video.closest('ytd-reel-video-player') ||
+                        video.closest('[is="ytd-shorts-player"]') ||
+                        video.closest('[is="ytd-reel-video-player"]') ||
+                        video.closest('div');
+    }
     
     // If no suitable container, create one
     if (!playerContainer || playerContainer === document.body) {
@@ -450,6 +482,8 @@ function addDownloadButtonFallback() {
         console.log('LoadifyPro: Could not find suitable container for fallback');
         return;
     }
+    
+    console.log('LoadifyPro: Using fallback container:', playerContainer);
 
     const button = document.createElement('button');
     button.className = 'loadifypro-download-btn';
@@ -504,8 +538,21 @@ function addDownloadButtonFallback() {
         createQualityPopup();
     };
 
-    playerContainer.appendChild(button);
-    console.log('LoadifyPro: Download button added via fallback method');
+    try {
+        playerContainer.appendChild(button);
+        console.log('LoadifyPro: Download button added via fallback method');
+    } catch (error) {
+        console.log('LoadifyPro: Failed to append to container, trying direct video attachment');
+        // If container append fails, try attaching directly to video's parent
+        const videoParent = video.parentElement;
+        if (videoParent) {
+            videoParent.style.position = 'relative';
+            videoParent.appendChild(button);
+            console.log('LoadifyPro: Download button added directly to video parent');
+        } else {
+            console.error('LoadifyPro: Could not attach button anywhere');
+        }
+    }
 }
 
 // Function to handle fullscreen and picture-in-picture changes
