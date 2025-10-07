@@ -125,7 +125,11 @@ class DownloadCard(ctk.CTkFrame):
         elif self.item.state == DownloadState.QUEUED:
             self.pause_button.grid_remove()
             self.resume_button.grid_remove()
-        else:  # COMPLETED, ERROR, CANCELLED
+        elif self.item.state == DownloadState.ERROR:
+            # Show resume button for failed downloads
+            self.pause_button.grid_remove()
+            self.resume_button.grid()
+        else:  # COMPLETED, CANCELLED
             self.pause_button.grid_remove()
             self.resume_button.grid_remove()
 
