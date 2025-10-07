@@ -148,6 +148,7 @@ class ModernDownloadManager(TkinterDnD.Tk):
             'cancel_download': self.cancel_download, 
             'pause_download': self.pause_download,
             'resume_download': self.resume_download,
+            'refresh_download_link': self.refresh_download_link,
             'get_translator': lambda: self.translator
         }
         card = DownloadCard(self.active_frame, item, callbacks)
@@ -195,6 +196,7 @@ class ModernDownloadManager(TkinterDnD.Tk):
             'cancel_download': self.cancel_download, 
             'pause_download': self.pause_download,
             'resume_download': self.resume_download,
+            'refresh_download_link': self.refresh_download_link,
             'get_translator': lambda: self.translator
         }
         card = DownloadCard(self.active_frame, item, callbacks)
@@ -258,6 +260,36 @@ class ModernDownloadManager(TkinterDnD.Tk):
             self.download_queue.put(item_id)
             logging.info(f"Download {item_id} resumed by user")
 
+    def refresh_download_link(self, item_id):
+        """Refresh the download link for a failed or expired download."""
+        if item := self.downloads.get(item_id):
+            try:
+                # Reset the download state
+                item.state = DownloadState.QUEUED
+                item.progress = 0.0
+                item.downloaded_size = 0
+                item.speed = 0.0
+                item.time_remaining = "∞"
+                item.error_message = ""
+                item.paused = False
+                item.pause_event.clear()
+                item.cancel_event.clear()
+                
+                # Update UI
+                if item_id in self.download_cards:
+                    self.download_cards[item_id].update_ui(item)
+                
+                # Re-queue the download for processing
+                self.download_queue.put(item_id)
+                logging.info(f"Download link refreshed for {item_id}")
+                
+                # Show success message
+                messagebox.showinfo("Success", "Download link refreshed successfully!")
+                
+            except Exception as e:
+                logging.error(f"Error refreshing download link for {item_id}: {e}")
+                messagebox.showerror("Error", f"Failed to refresh download link: {e}")
+
     def cancel_download(self, item_id):
         if item := self.downloads.get(item_id): item.cancel_event.set()
 
@@ -273,6 +305,7 @@ class ModernDownloadManager(TkinterDnD.Tk):
             'cancel_download': self.cancel_download, 
             'pause_download': self.pause_download,
             'resume_download': self.resume_download,
+            'refresh_download_link': self.refresh_download_link,
             'get_translator': lambda: self.translator
         }
             card = DownloadCard(frame, item, callbacks)

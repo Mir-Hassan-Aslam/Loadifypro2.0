@@ -69,6 +69,83 @@ class DownloadCard(ctk.CTkFrame):
         
         self.cancel_button = ctk.CTkButton(self.control_frame, text="❌", width=30, height=30, fg_color="transparent", hover_color=ERROR_COLOR, command=self._on_cancel)
         self.cancel_button.grid(row=0, column=2, padx=2)
+        
+        # Bind right-click context menu to all widgets
+        self._bind_context_menu_recursive(self)
+
+    def _bind_context_menu_recursive(self, widget):
+        """Recursively bind right-click context menu to widget and all its children."""
+        widget.bind("<Button-3>", self._show_context_menu)  # Right-click
+        for child in widget.winfo_children():
+            self._bind_context_menu_recursive(child)
+
+    def _show_context_menu(self, event):
+        """Show right-click context menu for download options."""
+        try:
+            import tkinter as tk
+            context_menu = tk.Menu(self, tearoff=0)
+            
+            # Add refresh option for failed downloads
+            if self.item.state == DownloadState.ERROR:
+                context_menu.add_command(label="🔄 Refresh Download Link", command=self._on_refresh_link)
+            
+            # Add pause/resume options based on state
+            if self.item.state == DownloadState.DOWNLOADING:
+                context_menu.add_command(label="⏸️ Pause Download", command=self._on_pause)
+            elif self.item.state == DownloadState.PAUSED:
+                context_menu.add_command(label="▶️ Resume Download", command=self._on_resume)
+            elif self.item.state == DownloadState.ERROR:
+                context_menu.add_command(label="▶️ Resume Download", command=self._on_resume)
+            
+            # Add cancel option for active downloads
+            if self.item.state in [DownloadState.DOWNLOADING, DownloadState.PAUSED, DownloadState.QUEUED]:
+                context_menu.add_command(label="❌ Cancel Download", command=self._on_cancel)
+            
+            # Add separator and info
+            context_menu.add_separator()
+            context_menu.add_command(label=f"📁 Open Folder", command=self._open_download_folder)
+            context_menu.add_command(label=f"🔗 Copy URL", command=self._copy_url)
+            
+            # Show context menu
+            context_menu.tk_popup(event.x_root, event.y_root)
+        except Exception as e:
+            print(f"Error showing context menu: {e}")
+
+    def _on_refresh_link(self):
+        """Refresh the download link."""
+        if self.callbacks.get('refresh_download_link'):
+            self.callbacks['refresh_download_link'](self.item.id)
+
+    def _open_download_folder(self):
+        """Open the download folder in file explorer."""
+        try:
+            import os
+            import subprocess
+            import platform
+            
+            folder_path = os.path.dirname(self.item.filepath)
+            if os.path.exists(folder_path):
+                if platform.system() == "Windows":
+                    subprocess.run(["explorer", folder_path])
+                elif platform.system() == "Darwin":  # macOS
+                    subprocess.run(["open", folder_path])
+                else:  # Linux
+                    subprocess.run(["xdg-open", folder_path])
+        except Exception as e:
+            print(f"Error opening folder: {e}")
+
+    def _copy_url(self):
+        """Copy the download URL to clipboard."""
+        try:
+            import tkinter as tk
+            root = tk.Tk()
+            root.withdraw()  # Hide the window
+            root.clipboard_clear()
+            root.clipboard_append(self.item.url)
+            root.update()  # Update clipboard
+            root.destroy()
+        except Exception as e:
+            print(f"Error copying URL: {e}")
 
     def update_ui(self, new_item_data):
         self.item = new_item_data
