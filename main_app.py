@@ -45,7 +45,8 @@ class ModernDownloadManager(TkinterDnD.Tk):
         self.downloads: dict[str, DownloadItem] = {}
         self.download_cards: dict[str, DownloadCard] = {}
         self.download_queue, self.ui_update_queue = queue.Queue(), queue.Queue()
-        self.active_download_threads, self.max_concurrent_downloads = [], 3
+        self.active_download_threads = []
+        self.max_concurrent_downloads = self.settings.get('max_concurrent_downloads', 3)
         
         # HTTP integration for browser
         self.http_integration = HTTPIntegration(self._add_download_from_browser)
@@ -77,6 +78,7 @@ class ModernDownloadManager(TkinterDnD.Tk):
         self.auth_manager.configure(s.get('auth_enabled', False), s.get('auth_user', ''), s.get('auth_pass', ''))
         self.av_manager.configs = s.get('av_configs', {})
         self.av_manager.active_config_name = s.get('av_active_config')
+        self.max_concurrent_downloads = s.get('max_concurrent_downloads', 3)
 
 
     def save_and_apply_settings(self, new_settings: dict):

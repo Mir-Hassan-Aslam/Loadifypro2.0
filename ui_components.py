@@ -230,7 +230,7 @@ class SettingsWindow(ctk.CTkToplevel):
         super().__init__(master)
         self.app = master
         self.translator = self.app.translator
-        self.title(self.translator.get('settings_title')); self.geometry("600x650"); self.transient(master)
+        self.title(self.translator.get('settings_title')); self.geometry("700x800"); self.transient(master)
         self.grid_columnconfigure(1, weight=1)
         self._create_widgets()
         self._load_current_settings()
@@ -239,35 +239,143 @@ class SettingsWindow(ctk.CTkToplevel):
         from advanced_ui_manager import ThemeManager
         theme_opts = ThemeManager(None).get_theme_options()
 
-        ctk.CTkLabel(self, text=self.translator.get('settings_ui_customization'), font=ctk.CTkFont(size=16, weight="bold")).grid(row=0, column=0, columnspan=2, pady=10, padx=20, sticky="w")
-        ctk.CTkLabel(self, text=self.translator.get('settings_appearance_mode')).grid(row=1, column=0, padx=20, pady=5, sticky="w")
-        self.appearance_menu = ctk.CTkOptionMenu(self, values=theme_opts['appearance_modes']); self.appearance_menu.grid(row=1, column=1, padx=20, pady=5, sticky="ew")
-        ctk.CTkLabel(self, text=self.translator.get('settings_color_theme')).grid(row=2, column=0, padx=20, pady=5, sticky="w")
-        self.theme_menu = ctk.CTkOptionMenu(self, values=theme_opts['color_themes']); self.theme_menu.grid(row=2, column=1, padx=20, pady=5, sticky="ew")
-        ctk.CTkLabel(self, text=self.translator.get('settings_language')).grid(row=3, column=0, padx=20, pady=5, sticky="w")
-        self.lang_menu = ctk.CTkOptionMenu(self, values=self.translator.get_available_languages()); self.lang_menu.grid(row=3, column=1, padx=20, pady=5, sticky="ew")
+        # Make window scrollable
+        self.grid_columnconfigure(0, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        
+        # Create scrollable frame
+        self.scrollable_frame = ctk.CTkScrollableFrame(self)
+        self.scrollable_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        self.scrollable_frame.grid_columnconfigure(1, weight=1)
+        
+        row = 0
+        
+        # UI Customization Section
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_ui_customization'), font=ctk.CTkFont(size=16, weight="bold")).grid(row=row, column=0, columnspan=2, pady=10, padx=20, sticky="w")
+        row += 1
+        
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_appearance_mode')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.appearance_menu = ctk.CTkOptionMenu(self.scrollable_frame, values=theme_opts['appearance_modes'])
+        self.appearance_menu.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
+        
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_color_theme')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.theme_menu = ctk.CTkOptionMenu(self.scrollable_frame, values=theme_opts['color_themes'])
+        self.theme_menu.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
+        
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_language')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.lang_menu = ctk.CTkOptionMenu(self.scrollable_frame, values=self.translator.get_available_languages())
+        self.lang_menu.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
 
-        ctk.CTkLabel(self, text=self.translator.get('settings_antivirus'), font=ctk.CTkFont(size=16, weight="bold")).grid(row=4, column=0, columnspan=2, pady=(20, 10), padx=20, sticky="w")
-        ctk.CTkLabel(self, text=self.translator.get('settings_active_engine')).grid(row=5, column=0, padx=20, pady=5, sticky="w")
-        self.engine_menu = ctk.CTkOptionMenu(self, values=list(self.app.av_manager.configs.keys())); self.engine_menu.grid(row=5, column=1, padx=20, pady=5, sticky="ew")
+        # Network Settings Section
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_network'), font=ctk.CTkFont(size=16, weight="bold")).grid(row=row, column=0, columnspan=2, pady=(20, 10), padx=20, sticky="w")
+        row += 1
+        
+        self.proxy_enabled_var = tk.BooleanVar()
+        ctk.CTkCheckBox(self.scrollable_frame, text=self.translator.get('settings_proxy_enabled'), variable=self.proxy_enabled_var).grid(row=row, column=0, columnspan=2, padx=20, pady=5, sticky="w")
+        row += 1
+        
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_proxy_http')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.proxy_http_entry = ctk.CTkEntry(self.scrollable_frame, placeholder_text="http://proxy:8080")
+        self.proxy_http_entry.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
+        
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_proxy_https')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.proxy_https_entry = ctk.CTkEntry(self.scrollable_frame, placeholder_text="https://proxy:8080")
+        self.proxy_https_entry.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
+
+        # Speed Limiter Section
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_speed_limit'), font=ctk.CTkFont(size=16, weight="bold")).grid(row=row, column=0, columnspan=2, pady=(20, 10), padx=20, sticky="w")
+        row += 1
+        
+        self.speed_limit_enabled_var = tk.BooleanVar()
+        ctk.CTkCheckBox(self.scrollable_frame, text=self.translator.get('settings_speed_limit_enabled'), variable=self.speed_limit_enabled_var).grid(row=row, column=0, columnspan=2, padx=20, pady=5, sticky="w")
+        row += 1
+        
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_speed_limit_kb')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.speed_limit_entry = ctk.CTkEntry(self.scrollable_frame, placeholder_text="1024")
+        self.speed_limit_entry.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
+
+        # Authentication Section
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_authentication'), font=ctk.CTkFont(size=16, weight="bold")).grid(row=row, column=0, columnspan=2, pady=(20, 10), padx=20, sticky="w")
+        row += 1
+        
+        self.auth_enabled_var = tk.BooleanVar()
+        ctk.CTkCheckBox(self.scrollable_frame, text=self.translator.get('settings_auth_enabled'), variable=self.auth_enabled_var).grid(row=row, column=0, columnspan=2, padx=20, pady=5, sticky="w")
+        row += 1
+        
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_auth_username')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.auth_username_entry = ctk.CTkEntry(self.scrollable_frame, placeholder_text="username")
+        self.auth_username_entry.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
+        
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_auth_password')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.auth_password_entry = ctk.CTkEntry(self.scrollable_frame, placeholder_text="password", show="*")
+        self.auth_password_entry.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
+
+        # Scheduler Section
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_scheduler'), font=ctk.CTkFont(size=16, weight="bold")).grid(row=row, column=0, columnspan=2, pady=(20, 10), padx=20, sticky="w")
+        row += 1
+        
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_max_concurrent')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.max_concurrent_entry = ctk.CTkEntry(self.scrollable_frame, placeholder_text="3")
+        self.max_concurrent_entry.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
+
+        # Antivirus Settings Section
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_antivirus'), font=ctk.CTkFont(size=16, weight="bold")).grid(row=row, column=0, columnspan=2, pady=(20, 10), padx=20, sticky="w")
+        row += 1
+        
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_active_engine')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.engine_menu = ctk.CTkOptionMenu(self.scrollable_frame, values=list(self.app.av_manager.configs.keys()))
+        self.engine_menu.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
         
         self.auto_scan_var = tk.BooleanVar()
-        ctk.CTkCheckBox(self, text=self.translator.get('settings_auto_scan'), variable=self.auto_scan_var).grid(row=6, column=0, columnspan=2, padx=20, pady=5, sticky="w")
+        ctk.CTkCheckBox(self.scrollable_frame, text=self.translator.get('settings_auto_scan'), variable=self.auto_scan_var).grid(row=row, column=0, columnspan=2, padx=20, pady=5, sticky="w")
+        row += 1
         
-        ctk.CTkLabel(self, text=self.translator.get('settings_vt_api_key')).grid(row=7, column=0, padx=20, pady=5, sticky="w")
-        self.vt_api_key_entry = ctk.CTkEntry(self, placeholder_text="Enter your VirusTotal API key"); self.vt_api_key_entry.grid(row=7, column=1, padx=20, pady=5, sticky="ew")
+        ctk.CTkLabel(self.scrollable_frame, text=self.translator.get('settings_vt_api_key')).grid(row=row, column=0, padx=20, pady=5, sticky="w")
+        self.vt_api_key_entry = ctk.CTkEntry(self.scrollable_frame, placeholder_text="Enter your VirusTotal API key")
+        self.vt_api_key_entry.grid(row=row, column=1, padx=20, pady=5, sticky="ew")
+        row += 1
 
-        ctk.CTkButton(self, text=self.translator.get('settings_save'), command=self._on_save).grid(row=11, column=1, padx=20, pady=20, sticky="e")
+        # Save button
+        ctk.CTkButton(self.scrollable_frame, text=self.translator.get('settings_save'), command=self._on_save).grid(row=row, column=1, padx=20, pady=20, sticky="e")
 
     def _load_current_settings(self):
         s = self.app.settings
         av_configs = s.get('av_configs', {})
         av_active = s.get('av_active_config')
         
+        # UI Settings
         self.appearance_menu.set(s.get('appearance_mode', 'Dark'))
         self.theme_menu.set(s.get('color_theme', 'blue'))
         self.lang_menu.set(s.get('language', 'en'))
         
+        # Network Settings
+        self.proxy_enabled_var.set(s.get('proxy_enabled', False))
+        self.proxy_http_entry.insert(0, s.get('proxy_http', ''))
+        self.proxy_https_entry.insert(0, s.get('proxy_https', ''))
+        
+        # Speed Limiter Settings
+        self.speed_limit_enabled_var.set(s.get('speed_limit_enabled', False))
+        self.speed_limit_entry.insert(0, str(s.get('speed_limit_kb', 1024)))
+        
+        # Authentication Settings
+        self.auth_enabled_var.set(s.get('auth_enabled', False))
+        self.auth_username_entry.insert(0, s.get('auth_user', ''))
+        self.auth_password_entry.insert(0, s.get('auth_pass', ''))
+        
+        # Scheduler Settings
+        self.max_concurrent_entry.insert(0, str(s.get('max_concurrent_downloads', 3)))
+        
+        # Antivirus Settings
         if av_active: self.engine_menu.set(av_active)
         if av_active and av_active in av_configs:
             self.auto_scan_var.set(av_configs[av_active].get('auto_scan', True))
@@ -277,12 +385,33 @@ class SettingsWindow(ctk.CTkToplevel):
     def _on_save(self):
         try:
             new_settings = {
+                # UI Settings
                 'appearance_mode': self.appearance_menu.get(),
                 'color_theme': self.theme_menu.get(),
                 'language': self.lang_menu.get(),
+                
+                # Network Settings
+                'proxy_enabled': self.proxy_enabled_var.get(),
+                'proxy_http': self.proxy_http_entry.get().strip(),
+                'proxy_https': self.proxy_https_entry.get().strip(),
+                
+                # Speed Limiter Settings
+                'speed_limit_enabled': self.speed_limit_enabled_var.get(),
+                'speed_limit_kb': int(self.speed_limit_entry.get() or 1024),
+                
+                # Authentication Settings
+                'auth_enabled': self.auth_enabled_var.get(),
+                'auth_user': self.auth_username_entry.get().strip(),
+                'auth_pass': self.auth_password_entry.get().strip(),
+                
+                # Scheduler Settings
+                'max_concurrent_downloads': int(self.max_concurrent_entry.get() or 3),
+                
+                # Antivirus Settings
                 'av_active_config': self.engine_menu.get(),
                 'av_configs': self.app.av_manager.configs,
             }
+            
             # Update specific AV configs from UI
             active_av = new_settings['av_active_config']
             if active_av in new_settings['av_configs']:
